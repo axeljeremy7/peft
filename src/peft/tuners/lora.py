@@ -84,7 +84,10 @@ class LoraConfig(PeftConfig):
         default=True,
         metadata={"help": "Whether to initialize the weights of the Lora layers."},
     )
-
+    print("LoraConfig:")
+    print(LoraConfig)
+    print(PeftType)
+    print(PeftType.LORA)
     def __post_init__(self):
         self.peft_type = PeftType.LORA
 
@@ -147,6 +150,7 @@ class LoraModel(torch.nn.Module):
     """
 
     def __init__(self, model, config, adapter_name):
+        print("LoraModel init")
         super().__init__()
         self.model = model
         self.forward = self.model.forward
@@ -154,6 +158,7 @@ class LoraModel(torch.nn.Module):
         self.add_adapter(adapter_name, self.peft_config[adapter_name])
 
     def add_adapter(self, adapter_name, config=None):
+        print("LoraModel add_adapter")
         if config is not None:
             model_config = self.model.config.to_dict() if hasattr(self.model.config, "to_dict") else self.model.config
             config = self._prepare_lora_config(config, model_config)
@@ -168,6 +173,7 @@ class LoraModel(torch.nn.Module):
             _freeze_adapter(self.model, adapter_name)
 
     def _find_and_replace(self, adapter_name):
+        print("LoraModel _find_and_replace")
         lora_config = self.peft_config[adapter_name]
         loaded_in_4bit = getattr(self.model, "is_loaded_in_4bit", False)
         loaded_in_8bit = getattr(self.model, "is_loaded_in_8bit", False)
@@ -453,8 +459,11 @@ class LoraLayer:
         self.disable_adapters = False
         self.in_features = in_features
         self.out_features = out_features
+        print(self)
+        print(f"Initialized LoraLayer with in_features={in_features} and out_features={out_features}")
 
     def update_layer(self, adapter_name, r, lora_alpha, lora_dropout, init_lora_weights):
+        print(f"Updating LoraLayer with r={r}, lora_alpha={lora_alpha}, lora_dropout={lora_dropout}")
         self.r[adapter_name] = r
         self.lora_alpha[adapter_name] = lora_alpha
         if lora_dropout > 0.0:
@@ -473,6 +482,7 @@ class LoraLayer:
         self.to(self.weight.device)
 
     def update_layer_embedding(self, adapter_name, r, lora_alpha, lora_dropout, init_lora_weights):
+        print(f"Updating LoraLayer with r={r}, lora_alpha={lora_alpha}, lora_dropout={lora_dropout}")
         self.r[adapter_name] = r
         self.lora_alpha[adapter_name] = lora_alpha
         if lora_dropout > 0.0:
@@ -495,6 +505,11 @@ class LoraLayer:
         self.to(self.weight.device)
 
     def reset_lora_parameters(self, adapter_name):
+        print(f"Resetting LoraLayer parameters for adapter {adapter_name}")
+        print(f"self.lora_A:")
+        print(self.lora_A)
+        print(f"self.lora_B:")
+        print(self.lora_B)
         if adapter_name in self.lora_A.keys():
             # initialize A the same way as the default for nn.Linear and B to zero
             nn.init.kaiming_uniform_(self.lora_A[adapter_name].weight, a=math.sqrt(5))
@@ -503,6 +518,10 @@ class LoraLayer:
             # initialize a the same way as the default for nn.linear and b to zero
             nn.init.zeros_(self.lora_embedding_A[adapter_name])
             nn.init.normal_(self.lora_embedding_B[adapter_name])
+        print(f"self.lora_A")
+        print(self.lora_A)
+        print(f"self.lora_B")
+        print(self.lora_B)    
 
 
 class Linear(nn.Linear, LoraLayer):
@@ -532,6 +551,8 @@ class Linear(nn.Linear, LoraLayer):
         nn.Linear.reset_parameters(self)
         self.update_layer(adapter_name, r, lora_alpha, lora_dropout, init_lora_weights)
         self.active_adapter = adapter_name
+        print("Initialized Linear LoraLayer")
+        print(self)
 
     def merge(self):
         if self.active_adapter not in self.lora_A.keys():
