@@ -85,7 +85,6 @@ class LoraConfig(PeftConfig):
         metadata={"help": "Whether to initialize the weights of the Lora layers."},
     )
     print("LoraConfig:")
-    print(LoraConfig)
     print(PeftType)
     print(PeftType.LORA)
     def __post_init__(self):
